@@ -1,0 +1,91 @@
+# Sports configuration file for Roster Builder
+# Defines skills, weights, specialist thresholds, team-sizing rules,
+# and input formats (player list and historical CSV schema).
+
+version: 1
+
+sports:
+  volleyball:
+    display_name: "Volleyball"
+    description: |
+      Volleyball configuration: primary skills (in priority order) and
+      rules used by the roster builder engine. The `center` role from
+      earlier notes is named `passer` here to capture the skill of
+      receiving and keeping the ball in play (passing/digging) so the
+      setter can run the offense.
+
+    # Skills used by the engine. Order here reflects relative importance
+    # but the actual weighting is controlled by `weights` below.
+    skills:
+      - name: setter
+        display: "Setter"
+        description: "Primary playmaker; sets teammates for attacks."
+      - name: passer
+        display: "Passer"
+        description: "Keeps the ball in play (reception/digging/passing) so the setter can run offense."
+      - name: attack
+        display: "Attacker"
+        description: "Primary offensive skill: spiking/attacking."
+      - name: serve
+        display: "Server"
+        description: "Ability to serve effectively (ace, consistent serve)."
+
+    # Default weights used to compute a player's Weighted Power Rating (WPR):
+    # WPR = sum(skill_value * weight)
+    weights:
+      setter: 0.35
+      passer: 0.20
+      attack: 0.30
+      serve: 0.15
+
+    # Specialist thresholds: a player with skill >= threshold is considered
+    # a specialist for seeding and coverage rules.
+    specialist_thresholds:
+      setter: 7
+      passer: 7
+      attack: 7
+      serve: 7
+
+    # Team sizing and creation rules. Default team size for volleyball is 6.
+    # Special rule: if total players > 17, create 3 teams.
+    team_rules:
+      default_team_size: 6
+      # If num_players > players_threshold -> num_teams = teams_when_threshold_exceeded
+      players_thresholds:
+        - players: 17
+          teams_when_exceeded: 3
+      # Otherwise, engine will compute teams based on team_size or explicit num_teams.
+
+    # Rotation helpers / constraints (optional tuning)
+    rotation:
+      enabled: true
+      # desired separation (positions apart) when placing specialists within a rotation
+      separation_distance: 3
+
+    # How to break ties when multiple assignments are equally good
+    tie_break: deterministic # options: deterministic | random
+
+    # Input format hints: how the engine should accept player lists and skill histories
+    input:
+      # A simple daily availability list can be a plain list of names (strings)
+      player_list_format: "names" # other options: objects (detailed records)
+
+      # Historical skill records may be provided in CSV format. The expected
+      # CSV header and semantics are described here so a parser can validate
+      # and highlight missing skill entries.
+      skills_csv_schema:
+        # recommended columns (name or id required). Date can be used to pick
+        # the most recent skill record per player when multiple rows exist.
+        header: [id, name, date, setter, passer, attack, serve]
+        date_format: "YYYY-MM-DD"
+        # If a player's skills are missing (empty cells), the engine should
+        # mark that player as having incomplete_skills=true and include a warning.
+        missing_skill_behavior: highlight
+
+    # Example sample data (for reference only, engine should read actual files)
+    examples:
+      sample_player_list:
+        - "Ramesh"
+        - "Suresh"
+        - "Kamlesh"
+      sample_skills_csv_header: "id,name,date,setter,passer,attack,serve"
